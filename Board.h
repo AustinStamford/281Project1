@@ -16,13 +16,13 @@ class Board {
 public:
     //constructor stores number of colors rows, columns
     //actually we probably need data types in here too
-    Board(const std::string output, const char dt, const int colors, const int rows, const int columns){
-        num_colors = colors;
-        num_rows = rows;
-        num_columns = columns;
-        //this might be rows but I think it's columns
-        BoardArray.reserve(num_columns);
-    }
+//    Board(const std::string output, const char dt, const int colors, const int rows, const int columns){
+//        num_colors = colors;
+//        num_rows = rows;
+//        num_columns = columns;
+//        //this might be rows but I think it's columns
+//        BoardArray.reserve(num_columns);
+//    }
     
     //function that reads lines of input in and initializes the board 2D vector
     //make this a vector of chars instead of a string
@@ -30,24 +30,7 @@ public:
         BoardArray.push_back(row);
     }
     
-    //I want to write a function that searches through the grid and gets ALL important symbols and adds them to a SWEET map along with their (x,y) coordinates as a pair
-    //This can for sure be done when I read everything in
-    //Just requires me to rewrite that completely
-    /*IDEAS:
-        I know how many colors I have so I can do a little for loop and use ASCII values to store those bad boys
-     */
-    //DO I EVEN NEED THIS?
-    //for now I';m just gonna add the start to the read function
-    void getSymbols(){
-        //we want to get the ascii codes of the correct letters
-        //loop through the board - linearly for now
-        /*ask the board if the current char is a:
-         -?
-         -@
-         -capital letter
-         -lowercase letter
-         */
-    }
+ 
     
     //row getter
     int getrows(){
@@ -64,6 +47,36 @@ public:
         return num_colors;
     }
     
+    //row setter
+    void setrows(int r){
+        num_rows = r;
+    }
+    
+    //col setter
+    void setcols(int c){
+        num_columns = c;
+    }
+    
+    //color setter
+    void setcolors(int cr){
+        num_colors = cr;
+    }
+    
+    //datatype setter
+    void setdt(char c){
+        dt = c;
+    }
+    
+    //output setter
+    void setoutput(std::string s){
+        output = s;
+    }
+    
+    //output getter
+    std::string getoutput(){
+        return output;
+    }
+    
     //array setter
     void setarray(std::vector<std::vector<char> > array){
         BoardArray = array;
@@ -71,13 +84,17 @@ public:
     
     std::vector<std::vector<char> > BoardArray;
     
-    std::pair<int, int> Start;
-    
+    //I ALSO NEED TO CREATE A 3D Vector to make sure I don't go places twice and keep track of the path
+    //i.e. first dimension is ROW, second is column, third is color and value is direction
+    //this is a discard pile and a path tracker
+    std::vector<std::vector<std::vector<char> > > tracker;
     
 private:
     int num_colors;
     int num_rows;
     int num_columns;
+    char dt;
+    std::string output;
 };
 
 #endif /* BOARD_H */

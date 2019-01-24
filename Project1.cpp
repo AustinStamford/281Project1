@@ -15,20 +15,18 @@
 #include "xcode_redirect.hpp"
 #include "Board.h"
 
-char dt;
-std::string output = "";
-//3D vector containing where we've been
-//color, row, col
-std::vector<std::vector<std::vector<int> > > discard_pile;
 //current color, row, column
 std::vector<int> current_state(3);
+//endpoint
+std::vector<int> endpoint(2);
 
-const int CARAT_ASCII = 94;
+Board board;
+
 
 void get_options(int argc, char** argv);
-std::vector<std::vector<char> > read_in_board(int num_rows, int argc, char** argv);
+void read_in_board(int num_rows, int argc, char** argv);
 void print(Board board);
-
+void algorithm(char dt, std::string output);
 
 
 int main(int argc, char** argv) {
@@ -42,9 +40,7 @@ int main(int argc, char** argv) {
              >> num_columns;
     get_options(argc, argv);
 
-    Board board(output, dt, num_colors, num_rows, num_columns);
-
-    board.setarray(read_in_board(num_rows, argc, argv));
+    read_in_board(num_rows, argc, argv);
      
     print(board);
     
@@ -54,37 +50,36 @@ int main(int argc, char** argv) {
 
     //read in the board and store it in the vector in board
     //this function works. It's not amazing but it works.
-    //the only thing is this uses the BoardArray member variable for essentially no reason
-    //okay now it doesn't. Is this inefficient? It feels inefficient
- std::vector<std::vector<char> > read_in_board(int num_rows, int argc, char** argv){
+    //slightly less inefficient - may want to go back and pass in array by ref
+ void read_in_board(int num_rows, int argc, char** argv){
     xcode_redirect(argc, argv);
-    std::vector<std::vector<char> > grid;
-    grid.resize(num_rows);
+    board.BoardArray.resize(num_rows);
     std::string newline;
-    std::vector<char> row;
     getline(std::cin, newline);
     int rowcount = 0;
     int colcount = 0;
     while(getline(std::cin, newline)){
         if(newline[0] != '/'){
             for(auto c : newline){
-                row.push_back(c);
+                board.BoardArray[rowcount].push_back(c);
                 colcount++;
                 if(c == '@'){
                     //let's just set current_state right here
-                    current_state[0] = CARAT_ASCII;
+                    current_state[0] = 0;//original color
                     current_state[1] = rowcount;
                     current_state[2] = colcount;
+                    //find the endpoint too
+                }
+                else if(c == '?'){
+                    endpoint[0] = rowcount;
+                    endpoint[1] = colcount;
                 }
             }
-            //makes a copy of row - this might be super inefficient
-            grid[rowcount] = row;
-            row.clear();
+            //next row
             rowcount++;
             colcount = 0;
         }
     }
-     return grid;
 }
 
 
@@ -107,15 +102,15 @@ void get_options(int argc, char** argv) {
     while ((option = getopt_long(argc, argv, "qso:h", longOpts, &option_index)) != -1) {
         switch (option) {
             case 'q':
-                dt = 'q';
+                board.setdt('q');
                 break;
                 
             case 's':
-                dt = 's';
+                board.setdt('q');
                 break;
                 
             case 'o':
-                output = optarg;
+                board.setoutput(optarg);
                 break;
                 
             case 'h':
@@ -125,7 +120,7 @@ void get_options(int argc, char** argv) {
     }
     
     // if no output is provided we want a map
-    if (output == "") output = "map";
+    if(board.getoutput() == "") board.setoutput("map");
     
 }
 
@@ -140,11 +135,20 @@ void print(Board board){
 }
 
 //BIG algorithm boy
-void algorithm(){
+void algorithm(char dt, std::string output){
     //okay the start is the current state
     //we need a deque to contain reachable states
-    //add the adjacent stuff with same color to the deque
-    //CHECK whether adj states are in the board - what's an efficient way to do this?
-    //take the next state and repeat
-    //if current_state
+        /*MAKE A FUNCTION FOR THIS
+        //add the adjacent stuff with same color to the deque
+        //CHECK whether adj states are in the board - what's an efficient way to do this?
+        //take the next state and add the last state to discard
+         ENDOF*/
+    //repeat
+    //if current_state is a button what happens?
+            /*MAKE A FUNCTION
+             -we need to add the current coords with the new color to the reachable
+             -and then add literally everything else available with the new color as well
+             -need to condition for doors - i.e. if there's a new color then check if
+              there are any new doors you can go through
+             */
 }
