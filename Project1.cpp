@@ -19,6 +19,8 @@
 std::vector<int> current_state(3);
 //endpoint
 std::vector<int> endpoint(2);
+//deque that stores reachable states
+std::deque<std::vector<int> > reachable_states;
 
 Board board;
 
@@ -27,6 +29,8 @@ void get_options(int argc, char** argv);
 void read_in_board(int num_rows, int argc, char** argv);
 void print(Board board);
 void algorithm(char dt, std::string output);
+//this is probably super ineffecient but it's fine for now
+void print_t(Board board);
 
 
 int main(int argc, char** argv) {
@@ -39,10 +43,24 @@ int main(int argc, char** argv) {
              >> num_rows
              >> num_columns;
     get_options(argc, argv);
-
+    
+    board.setcols(num_columns);
+    board.setrows(num_rows);
+    board.setcolors(num_colors);
+    
     read_in_board(num_rows, argc, argv);
-     
+    
+    /** this is a super naive way to do this **/
+    std::vector<std::vector<std::vector<char>>> tracker1
+     (num_colors + 1, std::vector<std::vector<char>>(num_rows,
+     std::vector<char>(num_columns, '.')));
+    board.tracker = tracker1;
+     /***************************/
+    
+    //initialize(board);
     print(board);
+    std::cout << "\n\n";
+    print_t(board);
     
     
     return 0;
@@ -106,7 +124,7 @@ void get_options(int argc, char** argv) {
                 break;
                 
             case 's':
-                board.setdt('q');
+                board.setdt('s');
                 break;
                 
             case 'o':
@@ -134,10 +152,37 @@ void print(Board board){
     }
 }
 
+//prints contents of tracker
+void print_t(Board board){
+    for(auto r : board.tracker){
+        std::cout << "new color" << std::endl;
+        for(auto c1 : r){
+            for(auto c2 : c1){
+                std::cout << c2;
+            }
+        std::cout << std::endl;
+        }
+        std::cout << "\n\n\n";
+    }
+}
+
 //BIG algorithm boy
 void algorithm(char dt, std::string output){
-    //okay the start is the current state
-    //we need a deque to contain reachable states
+    reachable_states.push_back(current_state);
+    //while loop that terminates when the deque is empty
+    while(!reachable_states.empty()){
+        //let's do queue later
+        if(dt == 'q'){
+            std::cout << "Under Construction" << std::endl;
+            exit(0);
+        }//endof queue
+        //stack
+        else{
+            current_state = reachable_states.back();
+            reachable_states.pop_back();
+            
+        }//endof stack
+        
         /*MAKE A FUNCTION FOR THIS
         //add the adjacent stuff with same color to the deque
         //CHECK whether adj states are in the board - what's an efficient way to do this?
@@ -151,4 +196,6 @@ void algorithm(char dt, std::string output){
              -need to condition for doors - i.e. if there's a new color then check if
               there are any new doors you can go through
              */
+    }//END WHILE NOT EMPTY
 }
+
