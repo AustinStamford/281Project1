@@ -182,9 +182,17 @@ void algorithm(char dt, std::string output){
         else{
             while(already_visited(reachable_states.back())){
                 reachable_states.pop_back();
+                if(reachable_states.empty()){
+                    std::cout << "NO REACHABLE STATES";
+                    return;
+                }
             }
             current_state = reachable_states.back();
             reachable_states.pop_back();
+            if(board.BoardArray[current_state[1]][current_state[2]] == '?'){
+                std::cout << "WIN\n";
+                return;
+            }
             //check north
             if(current_state[1] - 1 >= 0){
                if(board.BoardArray[current_state[1]-1][current_state[2]] == '.'){
@@ -198,6 +206,13 @@ void algorithm(char dt, std::string output){
                    reachable_states.push_back(std::vector<int>{board.BoardArray[current_state[1]-1][current_state[2]] - 96, current_state[1] - 1, current_state[2]});
                    board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '#';
                }
+                //check for a door
+               else if(board.BoardArray[current_state[1]-1][current_state[2]] - current_state[0] == 32){
+                   reachable_states.push_back(std::vector<int>{current_state[0], current_state[1] - 1, current_state[2]});
+                   board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = 'v';
+               }
+                
+                
             }//endof norf norf
             //check right
             if(current_state[2] + 1 < board.getcols()){
@@ -211,6 +226,11 @@ void algorithm(char dt, std::string output){
                         board.BoardArray[current_state[1]][current_state[2] + 1] - 97 < board.getcolors()){
                     reachable_states.push_back(std::vector<int>{board.BoardArray[current_state[1]][current_state[2] + 1] - 96, current_state[1], current_state[2] + 1});
                     board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '#';
+                }
+                //right
+                else if(board.BoardArray[current_state[1]][current_state[2] + 1] - current_state[0] == 32){
+                    reachable_states.push_back(std::vector<int>{current_state[0], current_state[1], current_state[2] + 1});
+                    board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '<';
                 }
             }//endof right
             //south
@@ -226,6 +246,9 @@ void algorithm(char dt, std::string output){
                     reachable_states.push_back(std::vector<int>{board.BoardArray[current_state[1]+1][current_state[2]] - 96, current_state[1] + 1, current_state[2]});
                     board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '#';
                 }
+                else if(board.BoardArray[current_state[1]+1][current_state[2]] - current_state[0] == 32){
+                    reachable_states.push_back(std::vector<int>{current_state[0], current_state[1] + 1, current_state[2]});
+                    board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '^';
             }
             //left
             if(current_state[2] - 1 >= 0){
@@ -233,12 +256,17 @@ void algorithm(char dt, std::string output){
                 //i.e. left is valid
                 reachable_states.push_back(std::vector<int>{current_state[0], current_state[1], current_state[2] - 1});
                 board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '>';
-            }
+                    }
                     else if(board.BoardArray[current_state[1]][current_state[2] - 1] - 96 > 0 &&
                             board.BoardArray[current_state[1]][current_state[2] - 1] - 97 < board.getcolors()){
                         reachable_states.push_back(std::vector<int>{board.BoardArray[current_state[1]][current_state[2] - 1] - 96, current_state[1], current_state[2] - 1});
                         board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '#';
                     }
+                    else if(board.BoardArray[current_state[1]][current_state[2] - 1] - current_state[0] == 32){
+                        reachable_states.push_back(std::vector<int>{current_state[0], current_state[1], current_state[2] - 1});
+                        board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '>';
+                    }
+                }
             }
             std::cout << "reachable state back : " << reachable_states.back()[0] << reachable_states.back()[1] << reachable_states.back()[2] << std::endl;
         }//endof stack
@@ -262,24 +290,24 @@ void algorithm(char dt, std::string output){
 bool already_visited(const std::vector<int> state){
     //check north
     if(state[1] - 1 >= 0 &&
-       board.BoardArray[state[1]-1][state[2]] != '.'){
-        return true;
+       board.tracker[state[0]][state[1]-1][state[2]] == '.'){
+        return false;
     }
     //check south
     if(state[1] + 1 < board.getrows() &&
-       board.BoardArray[state[1] + 1][state[2]] != '.'){
-        return true;
+       board.tracker[state[0]][state[1] + 1][state[2]] == '.'){
+        return false;
     }
     //check left
     if(state[2] - 1 >= 0 &&
-       board.BoardArray[state[1]][state[2] - 1] != '.'){
-        return true;
+       board.tracker[state[0]][state[1]][state[2] - 1] == '.'){
+        return false;
     }
     //check right
     if(state[2] + 1 < board.getcols() &&
-       board.BoardArray[state[1]][state[2] + 1] != '.'){
-        return true;
+       board.tracker[state[0]][state[1]][state[2] + 1] == '.'){
+        return false;
     }
-    return false;
+    return true;
 }
 
