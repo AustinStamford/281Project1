@@ -81,11 +81,12 @@ public:
     void setarray(std::vector<std::vector<char> > array){
         BoardArray = array;
     }
-    
+    //row, col
     std::vector<std::vector<char> > BoardArray;
     
     //I ALSO NEED TO CREATE A 3D Vector to make sure I don't go places twice and keep track of the path
-    //i.e. first dimension is ROW, second is column, third is color and value is direction
+    //i.e. first dimension is COLOR, second is ROW, third is COLUMN and value is direction
+    //a hash value denotes a color change
     //this is a discard pile and a path tracker
     std::vector<std::vector<std::vector<char> > > tracker;
     

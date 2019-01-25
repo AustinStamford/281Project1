@@ -31,6 +31,7 @@ void print(Board board);
 void algorithm(char dt, std::string output);
 //this is probably super ineffecient but it's fine for now
 void print_t(Board board);
+bool already_visited(const std::vector<int> state);
 
 
 int main(int argc, char** argv) {
@@ -57,8 +58,9 @@ int main(int argc, char** argv) {
     board.tracker = tracker1;
      /***************************/
     
-    //initialize(board);
     print(board);
+    
+    algorithm('s', "anna");
     std::cout << "\n\n";
     print_t(board);
     
@@ -80,7 +82,6 @@ int main(int argc, char** argv) {
         if(newline[0] != '/'){
             for(auto c : newline){
                 board.BoardArray[rowcount].push_back(c);
-                colcount++;
                 if(c == '@'){
                     //let's just set current_state right here
                     current_state[0] = 0;//original color
@@ -92,6 +93,7 @@ int main(int argc, char** argv) {
                     endpoint[0] = rowcount;
                     endpoint[1] = colcount;
                 }
+                colcount++;
             }
             //next row
             rowcount++;
@@ -178,9 +180,67 @@ void algorithm(char dt, std::string output){
         }//endof queue
         //stack
         else{
+            while(already_visited(reachable_states.back())){
+                reachable_states.pop_back();
+            }
             current_state = reachable_states.back();
             reachable_states.pop_back();
-            
+            //check north
+            if(current_state[1] - 1 >= 0){
+               if(board.BoardArray[current_state[1]-1][current_state[2]] == '.'){
+                //i.e. north is valid
+                reachable_states.push_back(std::vector<int>{current_state[0], current_state[1] - 1, current_state[2]});
+                board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = 'v';
+               }
+                //this is how we check for a button
+               else if(board.BoardArray[current_state[1]-1][current_state[2]] - 96 > 0 &&
+                       board.BoardArray[current_state[1]-1][current_state[2]] - 97 < board.getcolors()){
+                   reachable_states.push_back(std::vector<int>{board.BoardArray[current_state[1]-1][current_state[2]] - 96, current_state[1] - 1, current_state[2]});
+                   board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '#';
+               }
+            }//endof norf norf
+            //check right
+            if(current_state[2] + 1 < board.getcols()){
+                if(board.BoardArray[current_state[1]][current_state[2] + 1] == '.'){
+                    //i.e. right is valid
+                    reachable_states.push_back(std::vector<int>{current_state[0], current_state[1], current_state[2] + 1});
+                    board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '<';
+                }
+                //this is how we check for a button
+                else if(board.BoardArray[current_state[1]][current_state[2] + 1] - 96 > 0 &&
+                        board.BoardArray[current_state[1]][current_state[2] + 1] - 97 < board.getcolors()){
+                    reachable_states.push_back(std::vector<int>{board.BoardArray[current_state[1]][current_state[2] + 1] - 96, current_state[1], current_state[2] + 1});
+                    board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '#';
+                }
+            }//endof right
+            //south
+            if(current_state[1] + 1 < board.getrows()){
+                if(board.BoardArray[current_state[1] + 1][current_state[2]] == '.'){
+                //i.e. south is valid
+                reachable_states.push_back(std::vector<int>{current_state[0], current_state[1] + 1, current_state[2]});
+                board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '^';
+            }
+                //this is how we check for a button
+                else if(board.BoardArray[current_state[1]+1][current_state[2]] - 96 > 0 &&
+                        board.BoardArray[current_state[1]+1][current_state[2]] - 97 < board.getcolors()){
+                    reachable_states.push_back(std::vector<int>{board.BoardArray[current_state[1]+1][current_state[2]] - 96, current_state[1] + 1, current_state[2]});
+                    board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '#';
+                }
+            }
+            //left
+            if(current_state[2] - 1 >= 0){
+                    if(board.BoardArray[current_state[1]][current_state[2] - 1] == '.'){
+                //i.e. left is valid
+                reachable_states.push_back(std::vector<int>{current_state[0], current_state[1], current_state[2] - 1});
+                board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '>';
+            }
+                    else if(board.BoardArray[current_state[1]][current_state[2] - 1] - 96 > 0 &&
+                            board.BoardArray[current_state[1]][current_state[2] - 1] - 97 < board.getcolors()){
+                        reachable_states.push_back(std::vector<int>{board.BoardArray[current_state[1]][current_state[2] - 1] - 96, current_state[1], current_state[2] - 1});
+                        board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '#';
+                    }
+            }
+            std::cout << "reachable state back : " << reachable_states.back()[0] << reachable_states.back()[1] << reachable_states.back()[2] << std::endl;
         }//endof stack
         
         /*MAKE A FUNCTION FOR THIS
@@ -197,5 +257,29 @@ void algorithm(char dt, std::string output){
               there are any new doors you can go through
              */
     }//END WHILE NOT EMPTY
+}
+
+bool already_visited(const std::vector<int> state){
+    //check north
+    if(state[1] - 1 >= 0 &&
+       board.BoardArray[state[1]-1][state[2]] != '.'){
+        return true;
+    }
+    //check south
+    if(state[1] + 1 < board.getrows() &&
+       board.BoardArray[state[1] + 1][state[2]] != '.'){
+        return true;
+    }
+    //check left
+    if(state[2] - 1 >= 0 &&
+       board.BoardArray[state[1]][state[2] - 1] != '.'){
+        return true;
+    }
+    //check right
+    if(state[2] + 1 < board.getcols() &&
+       board.BoardArray[state[1]][state[2] + 1] != '.'){
+        return true;
+    }
+    return false;
 }
 
