@@ -34,12 +34,13 @@ void print_t(Board board);
 bool already_visited(const std::vector<int> state);
 void print_unreachable();
 void map_output();
-void list_output();
+void list_output(std::vector<int> output);
+void output();
 std::string print_coords(int c, int x, int y);
 
 
 int main(int argc, char** argv) {
-    /***********************************/
+    /***********DONT TOUCH**************/
     std::ios_base::sync_with_stdio(false);
     xcode_redirect(argc, argv);
     /***********************************/
@@ -52,6 +53,7 @@ int main(int argc, char** argv) {
     board.setcols(num_columns);
     board.setrows(num_rows);
     board.setcolors(num_colors);
+    board.setoutput("list");
     
     read_in_board(num_rows, argc, argv);
     
@@ -64,19 +66,14 @@ int main(int argc, char** argv) {
     
     print(board);
     //EDIT THIS DUMBASS
-    if(algorithm('q', "anna")){
-        list_output();
+    if(algorithm('q', "list")){
+        output();
     }
-
     else{
         //else puzzle is not solvable
         std::cout << "No solution.\nReachable:\n";
         print_unreachable();
     }
-   //std::cout << "\n\n";
-    //print_t(board);
-    
-    
     return 0;
 }
 
@@ -180,8 +177,7 @@ void print_t(Board board){
     }
 }
 
-//BIG algorithm boy
-//returns
+//returns whether a solution was found
 bool algorithm(char dt, std::string output){
     reachable_states.push_back(current_state);
     //while loop that terminates when the deque is empty
@@ -322,21 +318,6 @@ bool algorithm(char dt, std::string output){
             
         }//endof stack
     }//END WHILE NOT EMPTY
-    
-    
-    /*MAKE A FUNCTION FOR THIS
-     //add the adjacent stuff with same color to the deque
-     //CHECK whether adj states are in the board - what's an efficient way to do this?
-     //take the next state and add the last state to discard
-     ENDOF*/
-    //repeat
-    //if current_state is a button what happens?
-    /*MAKE A FUNCTION
-     -we need to add the current coords with the new color to the reachable
-     -and then add literally everything else available with the new color as well
-     -need to condition for doors - i.e. if there's a new color then check if
-     there are any new doors you can go through
-     */
     return false;
 }
 
@@ -363,18 +344,13 @@ void print_unreachable(){
     print(board);
 }
 
-//handles output in map form
-void map_output(){
-    
-}
-
 //handles output in list form
 //let's do this first
-void list_output(){
+void output(){
     int x = endpoint[0];
     int y = endpoint[1];
     int c = -1;
-    std::deque<std::string> output;
+    std::deque<std::vector<int>> output;
     for(int i = 0; i < board.getcolors() + 1; i++){
         if(board.tracker[i][x][y] != '.'){
             c = i;
@@ -382,45 +358,66 @@ void list_output(){
     }
     if(c == -1){
         std:: cerr << "end not reached";
-        return;
+        exit(0);
     }
-    output.push_back(print_coords(c, x, y));
+    output.push_back(std::vector<int>{c, x, y});
     while(board.BoardArray[x][y] != '@'){
         //look north
         if(board.tracker[c][x][y] == '^'){
-            output.push_back(print_coords(c, x - 1, y));
+            output.push_back(std::vector<int>{c, x - 1, y});
             x--;
         }
         else if(board.tracker[c][x][y] == '<'){
-            output.push_back(print_coords(c, x, y - 1));
+            output.push_back(std::vector<int>{c, x, y - 1});
             y--;
         }
         else if(board.tracker[c][x][y] == '>'){
-            output.push_back(print_coords(c, x, y + 1));
+            output.push_back(std::vector<int>{c, x, y + 1});
             y++;
         }
         else if(board.tracker[c][x][y] == 'v'){
-            output.push_back(print_coords(c, x + 1, y));
+            output.push_back(std::vector<int>{c, x + 1, y});
             x++;
         }
         else if(board.tracker[c][x][y] == '#'){
-            output.push_back(print_coords(c - 1, x, y));
+            output.push_back(std::vector<int>{c - 1, x, y});
             c--;
         }
     }
-    while(!output.empty()){
-        std::cout << output.back() << "\n";
-        output.pop_back();
+    if(board.getoutput() == "list"){
+        while(!output.empty()){
+            list_output(output.back());
+            output.pop_back();
+        }
     }
 }
 
-std::string print_coords(int c, int x, int y){
+void list_output(std::vector<int> output){
     char color;
     std::string str = "";
-    if(c == 0) color = '^';
-    else color = c + 96;
-    str += "(";
-    str += color;
-    return (str + ", ("
-    + std::to_string(x) + ", " + std::to_string(y) + "))");
+    if(output[0] == 0) color = '^';
+    else color = output[0] + 96;
+    std::cout << "(" << color << ", (" << std::to_string(output[1])
+    << ", " << std::to_string(output[2]) << "))\n";
 }
+
+//handles output in map form
+void map_output(std::vector<int> output){
+    //in parent function loop through to get here
+    //match arg vector with tracker
+    //Switch ^>v< to +
+    //switch # to %
+    //call modified print_t function
+    //we're just straight modifying tracker here because we don't need it anymore
+}
+
+//std::string print_coords(int c, int x, int y){
+//    char color;
+//    std::string str = "";
+//    if(c == 0) color = '^';
+//    else color = c + 96;
+//    str += "(";
+//    str += color;
+//    return (str + ", ("
+//    + std::to_string(x) + ", " + std::to_string(y) + "))");
+//}
