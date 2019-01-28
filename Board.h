@@ -26,11 +26,12 @@ public:
     
     //function that reads lines of input in and initializes the board 2D vector
     //make this a vector of chars instead of a string
-    void read(const std::vector<char> row){
-        BoardArray.push_back(row);
+    Board(){
+        num_rows = 0;
+        num_colors = 0;
+        num_columns = 0;
+        output = "map";
     }
-    
- 
     
     //row getter
     int getrows(){
@@ -82,10 +83,10 @@ public:
         return dt;
     }
     
-    //array setter
-    void setarray(std::vector<std::vector<char> > array){
-        BoardArray = array;
-    }
+//    //array setter
+//    void setarray(std::vector<std::vector<char> > array){
+//        BoardArray = array;
+//    }
     //row, col
     std::vector<std::vector<char> > BoardArray;
     
