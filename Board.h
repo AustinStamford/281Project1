@@ -77,6 +77,11 @@ public:
         return output;
     }
     
+    //dt getter
+    char getdt(){
+        return dt;
+    }
+    
     //array setter
     void setarray(std::vector<std::vector<char> > array){
         BoardArray = array;

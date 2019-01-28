@@ -19,8 +19,11 @@
 std::vector<int> current_state(3);
 //endpoint
 std::vector<int> endpoint(2);
+//endpoint
+std::vector<int> start_point(2);
 //deque that stores reachable states
 std::deque<std::vector<int> > reachable_states;
+
 
 Board board;
 
@@ -28,15 +31,22 @@ Board board;
 void get_options(int argc, char** argv);
 void read_in_board(int num_rows, int argc, char** argv);
 void print(Board board);
-bool algorithm(char dt, std::string output);
+bool algorithm(char dt);
 //this is probably super ineffecient but it's fine for now
 void print_t(Board board);
 bool already_visited(const std::vector<int> state);
 void print_unreachable();
-void map_output();
+void map_output(std::vector<int> output, std::vector<std::vector<std::vector<char> > > &trackercopy);
 void list_output(std::vector<int> output);
 void output();
 std::string print_coords(int c, int x, int y);
+
+//algo helpers
+void open_move(int co, int x, int y, char ch);
+void button(int co, int x, int y, char ch);
+void door(int co, int x, int y, char ch);
+void trap(int co, int x, int y, char ch)
+
 
 
 int main(int argc, char** argv) {
@@ -53,7 +63,6 @@ int main(int argc, char** argv) {
     board.setcols(num_columns);
     board.setrows(num_rows);
     board.setcolors(num_colors);
-    board.setoutput("list");
     
     read_in_board(num_rows, argc, argv);
     
@@ -64,9 +73,8 @@ int main(int argc, char** argv) {
     board.tracker = tracker1;
     /***************************/
     
-    print(board);
-    //EDIT THIS DUMBASS
-    if(algorithm('q', "list")){
+    //print(board);
+    if(algorithm(board.getdt())){
         output();
     }
     else{
@@ -74,6 +82,7 @@ int main(int argc, char** argv) {
         std::cout << "No solution.\nReachable:\n";
         print_unreachable();
     }
+    //print_t(board);
     return 0;
 }
 
@@ -93,7 +102,9 @@ void read_in_board(int num_rows, int argc, char** argv){
                 board.BoardArray[rowcount].push_back(c);
                 if(c == '@'){
                     //let's just set current_state right here
-                    current_state[0] = 0;//original color
+                    start_point[0] = rowcount;//original color
+                    start_point[1] = colcount;
+                    current_state[0] = 0;
                     current_state[1] = rowcount;
                     current_state[2] = colcount;
                     //find the endpoint too
@@ -164,21 +175,22 @@ void print(Board board){
 }
 
 //prints contents of tracker
-void print_t(Board board){
-    for(auto r : board.tracker){
-        std::cout << "new color" << std::endl;
-        for(auto c1 : r){
+void print_t(std::vector<std::vector<std::vector<char> > > tracker){
+    char c = '^';
+    for(int i = 0; i < board.getcolors() + 1; i++){
+        if(i != 0) c = 96 + i;
+        std::cout << "// color "<< c << "\n";
+        for(auto c1 : tracker[i]){
             for(auto c2 : c1){
                 std::cout << c2;
             }
-            std::cout << std::endl;
+            std::cout << "\n";
         }
-        std::cout << "\n\n\n";
     }
 }
 
 //returns whether a solution was found
-bool algorithm(char dt, std::string output){
+bool algorithm(char dt){
     reachable_states.push_back(current_state);
     //while loop that terminates when the deque is empty
     while(!reachable_states.empty()){
@@ -198,11 +210,12 @@ bool algorithm(char dt, std::string output){
         //check north
         if(current_state[1] - 1 >= 0){
             if(board.BoardArray[current_state[1]-1][current_state[2]] == '.' ||
-               board.BoardArray[current_state[1]-1][current_state[2]] =='?'){
+               board.BoardArray[current_state[1]-1][current_state[2]] =='?' ||
+               (board.BoardArray[current_state[1]-1][current_state[2]] == '^' && current_state[0] == 0)){
                 //i.e. north is valid
                 if(!already_visited(std::vector<int>{current_state[0], current_state[1] - 1, current_state[2]})){
                     reachable_states.push_back(std::vector<int>{current_state[0], current_state[1] - 1, current_state[2]});
-                    board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = 'v';
+                    board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '-';
                 }
             }
             //this is how we check for a button
@@ -213,8 +226,8 @@ bool algorithm(char dt, std::string output){
                     current_state[1] - 1,
                     current_state[2]})){
                         reachable_states.push_back(std::vector<int>{board.BoardArray[current_state[1]-1][current_state[2]] - 96, current_state[1] - 1, current_state[2]});
-                        board.tracker[current_state[0]][reachable_states.back()[1]][reachable_states.back()[2]] = 'v';
-                        board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '#';
+                        board.tracker[current_state[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '}';
+                        board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = current_state[0] + 65;
                     }
             }
             //check for a door
@@ -222,16 +235,25 @@ bool algorithm(char dt, std::string output){
             else if(board.BoardArray[current_state[1]-1][current_state[2]] - current_state[0] == 64){
                 if(!already_visited(std::vector<int>{current_state[0], current_state[1] - 1, current_state[2]})){
                     reachable_states.push_back(std::vector<int>{current_state[0], current_state[1] - 1, current_state[2]});
-                    board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = 'v';
+                    board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '-';
                 }
             }
-            
-            
+            //check for a trap
+            else if(board.BoardArray[current_state[1]-1][current_state[2]] == '^' &&
+                    current_state[0] != 0){
+                if(!already_visited(std::vector<int>{0, current_state[1] - 1, current_state[2]})){
+                    reachable_states.push_back(std::vector<int>{0, current_state[1] - 1, current_state[2]});
+                    board.tracker[0][reachable_states.back()[1]][reachable_states.back()[2]] = current_state[0] + 96;
+                    board.tracker[current_state[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '}';
+                }
+                
+            }
         }//endof norf norf
         //check right
         if(current_state[2] + 1 < board.getcols()){
             if(board.BoardArray[current_state[1]][current_state[2] + 1] == '.' ||
-               board.BoardArray[current_state[1]][current_state[2] + 1] =='?'){
+               board.BoardArray[current_state[1]][current_state[2] + 1] =='?' ||
+               (board.BoardArray[current_state[1]][current_state[2] + 1] == '^' && current_state[0] == 0)){
                 //i.e. right is valid
                 if(!already_visited(std::vector<int>{current_state[0], current_state[1], current_state[2] + 1})){
                     reachable_states.push_back(std::vector<int>{current_state[0], current_state[1], current_state[2] + 1});
@@ -246,9 +268,10 @@ bool algorithm(char dt, std::string output){
                     current_state[1],
                     current_state[2] + 1})){
                         reachable_states.push_back(std::vector<int>{board.BoardArray[current_state[1]][current_state[2] + 1] - 96, current_state[1], current_state[2] + 1});
-                        board.tracker[current_state[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '<';
-                        board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '#';
+                        board.tracker[current_state[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '|';
+                            board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = current_state[0] + 65;
                     }
+                        
             }
             //right door
             //64 b/c A is 65 and color a will be 1 in current_state, B is 65, b is 2, and so on
@@ -258,15 +281,26 @@ bool algorithm(char dt, std::string output){
                     board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '<';
                 }
             }
+            //check for a trap
+            else if(board.BoardArray[current_state[1]][current_state[2] + 1] == '^' &&
+                    current_state[0] != 0){
+                if(!already_visited(std::vector<int>{0, current_state[1], current_state[2] + 1})){
+                    reachable_states.push_back(std::vector<int>{0, current_state[1], current_state[2] + 1});
+                    board.tracker[0][reachable_states.back()[1]][reachable_states.back()[2]] = current_state[0] + 96;
+                    board.tracker[current_state[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '|';
+                }
+            }
         }//endof right
         //south
         if(current_state[1] + 1 < board.getrows()){
             if(board.BoardArray[current_state[1] + 1][current_state[2]] == '.' ||
-               board.BoardArray[current_state[1] + 1][current_state[2]] =='?'){
+               board.BoardArray[current_state[1] + 1][current_state[2]] =='?' ||
+               (board.BoardArray[current_state[1] + 1][current_state[2]] =='^' && current_state[0] == 0)){
                 //i.e. south is valid
                 if(!already_visited(std::vector<int>{current_state[0], current_state[1] + 1, current_state[2]})){
-                    reachable_states.push_back(std::vector<int>{current_state[0], current_state[1] + 1, current_state[2]});
-                    board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '^';
+                    open_move(current_state[0], current_state[1] + 1, current_state[2], '^');
+//                    reachable_states.push_back(std::vector<int>{current_state[0], current_state[1] + 1, current_state[2]});
+//                    board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '^';
                 }
             }
             //this is how we check for a button
@@ -274,8 +308,8 @@ bool algorithm(char dt, std::string output){
                     board.BoardArray[current_state[1]+1][current_state[2]] - 97 < board.getcolors()){
                 if(!already_visited(std::vector<int>{current_state[0], current_state[1] + 1, current_state[2]})){
                     reachable_states.push_back(std::vector<int>{board.BoardArray[current_state[1]+1][current_state[2]] - 96, current_state[1] + 1, current_state[2]});
-                    board.tracker[current_state[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '^';
-                    board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '#';
+                    board.tracker[current_state[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '{';
+                        board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = current_state[0] + 65;
                 }
             }
             //check for a door
@@ -286,11 +320,21 @@ bool algorithm(char dt, std::string output){
                     board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '^';
                 }
             }
+            //check for a trap
+            else if(board.BoardArray[current_state[1] + 1][current_state[2]] == '^' &&
+                    current_state[0] != 0){
+                if(!already_visited(std::vector<int>{0, current_state[1] + 1, current_state[2]})){
+                    reachable_states.push_back(std::vector<int>{0, current_state[1] + 1, current_state[2]});
+                    board.tracker[0][reachable_states.back()[1]][reachable_states.back()[2]] = current_state[0] + 96;
+                    board.tracker[current_state[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '{';
+                }
+            }
         }
         //left
         if(current_state[2] - 1 >= 0){
             if(board.BoardArray[current_state[1]][current_state[2] - 1] == '.' ||
-               board.BoardArray[current_state[1]][current_state[2] - 1] =='?'){
+               board.BoardArray[current_state[1]][current_state[2] - 1] =='?' ||
+               (board.BoardArray[current_state[1]][current_state[2] - 1] == '^' && current_state[0] == 0)){
                 //i.e. left is valid
                 if(!already_visited(std::vector<int>{current_state[0], current_state[1], current_state[2] - 1})){
                     reachable_states.push_back(std::vector<int>{current_state[0], current_state[1], current_state[2] - 1});
@@ -304,8 +348,9 @@ bool algorithm(char dt, std::string output){
                     current_state[1],
                     current_state[2] - 1})){
                         reachable_states.push_back(std::vector<int>{board.BoardArray[current_state[1]][current_state[2] - 1] - 96, current_state[1], current_state[2] - 1});
-                        board.tracker[current_state[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '>';
-                        board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '#';
+                        board.tracker[current_state[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '~';
+                            board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = current_state[0] + 65;
+                    }
                     }
             }
             //64 b/c A is 65 and color a will be 1 in current_state, B is 65, b is 2, and so on
@@ -315,9 +360,18 @@ bool algorithm(char dt, std::string output){
                     board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '>';
                 }
             }
+            //check for a trap
+            else if(board.BoardArray[current_state[1]][current_state[2] - 1] == '^' &&
+                    current_state[0] != 0){
+                if(!already_visited(std::vector<int>{0, current_state[1], current_state[2] - 1})){
+                    reachable_states.push_back(std::vector<int>{0, current_state[1], current_state[2] - 1});
+                    board.tracker[0][reachable_states.back()[1]][reachable_states.back()[2]] = current_state[0] + 96;
+                    board.tracker[reachable_states.back()[0]][reachable_states.back()[1]][reachable_states.back()[2]] = '~';
+                }
+            }
             
         }//endof stack
-    }//END WHILE NOT EMPTY
+    //END WHILE NOT EMPTY
     return false;
 }
 
@@ -363,25 +417,41 @@ void output(){
     output.push_back(std::vector<int>{c, x, y});
     while(board.BoardArray[x][y] != '@'){
         //look north
-        if(board.tracker[c][x][y] == '^'){
+        if(board.tracker[c][x][y] == '^' || board.tracker[c][x][y] == '{'){
             output.push_back(std::vector<int>{c, x - 1, y});
             x--;
         }
-        else if(board.tracker[c][x][y] == '<'){
+        else if(board.tracker[c][x][y] == '<' || board.tracker[c][x][y] == '|'){
             output.push_back(std::vector<int>{c, x, y - 1});
             y--;
         }
-        else if(board.tracker[c][x][y] == '>'){
+        else if(board.tracker[c][x][y] == '>' || board.tracker[c][x][y] == '~'){
             output.push_back(std::vector<int>{c, x, y + 1});
             y++;
         }
-        else if(board.tracker[c][x][y] == 'v'){
+        else if(board.tracker[c][x][y] == '-' || board.tracker[c][x][y] == '}'){
             output.push_back(std::vector<int>{c, x + 1, y});
             x++;
         }
-        else if(board.tracker[c][x][y] == '#'){
-            output.push_back(std::vector<int>{c - 1, x, y});
-            c--;
+        else if(board.tracker[c][x][y] > 64 && board.tracker[c][x][y] < 123){
+            output.push_back(std::vector<int>{board.tracker[c][x][y] - 64, x, y});
+            c = board.tracker[c][x][y] - 64;
+//            if(board.BoardArray[x][y] == 'a'){
+//                output.push_back(std::vector<int>{0, x, y});
+//                c = 0;
+//            }
+//            else{
+//                output.push_back(std::vector<int>{c - (board.BoardArray[x][y] - 97), x, y});
+//                c-= (board.BoardArray[x][y] - 97);
+//            }
+        }
+        else if(board.tracker[c][x][y] > 96 && board.tracker[c][x][y] < 123){
+            c+= (board.tracker[c][x][y] - 96);
+            output.push_back(std::vector<int>{c, x, y});
+        }
+        else if(board.tracker[c][x][y] == '!'){
+            output.push_back(std::vector<int>{0, x, y});
+            c = 0;
         }
     }
     if(board.getoutput() == "list"){
@@ -389,6 +459,30 @@ void output(){
             list_output(output.back());
             output.pop_back();
         }
+    }
+    else{
+        std::vector<std::vector<std::vector<char> > > trackercopy = board.tracker;
+        for(int i = 0; i < board.getcolors() + 1; i++){
+            trackercopy[i] = board.BoardArray;
+            if(i != 0) trackercopy[i][start_point[0]][start_point[1]] = '.';
+        }
+        for(int i = 0; i < board.getrows(); i++){
+            for(int j = 0; j < board.getcols(); j++){
+                if(board.BoardArray[i][j] < 91 && board.BoardArray[i][j] > 64){
+                    trackercopy[board.BoardArray[i][j] - 64][i][j] = '.';
+                }
+                else if(board.BoardArray[i][j] == '^'){
+                    trackercopy[0][i][j] = '.';
+                }
+            }
+        }
+        trackercopy[output.front()[0]][output.front()[1]][output.front()[2]] = '?';
+        output.pop_front();
+        while(!output.empty()){
+            map_output(output.back(), trackercopy);
+            output.pop_back();
+        }
+        print_t(trackercopy);
     }
 }
 
@@ -402,10 +496,26 @@ void list_output(std::vector<int> output){
 }
 
 //handles output in map form
-void map_output(std::vector<int> output){
+//important to know what the input for this function is:
+//only need to deal with THIS input
+void map_output(std::vector<int> output, std::vector<std::vector<std::vector<char> > > &trackercopy){
     //in parent function loop through to get here
+    char c = board.tracker[output[0]][output[1]][output[2]];
     //match arg vector with tracker
     //Switch ^>v< to +
+    if(output == std::vector<int>{0, start_point[0], start_point[1]}){
+        trackercopy[output[0]][output[1]][output[2]] = '@';
+        return;
+    }
+    if(c == '^' || c == '-' || c == '<' || c == '>'){
+        trackercopy[output[0]][output[1]][output[2]] = '+';
+    }
+    else if(c == '#' || (c > 96 && c < 122)){
+        trackercopy[output[0]][output[1]][output[2]] = '@';
+    }
+    else if(c == '}' || c == '|' || c == '}' || c == '~' ){
+        trackercopy[output[0]][output[1]][output[2]] = '%';
+    }
     //switch # to %
     //call modified print_t function
     //we're just straight modifying tracker here because we don't need it anymore
@@ -421,3 +531,22 @@ void map_output(std::vector<int> output){
 //    return (str + ", ("
 //    + std::to_string(x) + ", " + std::to_string(y) + "))");
 //}
+
+void open_move(int co, int x, int y, char ch){
+    reachable_states.push_back(std::vector<int>{co, x, y});
+    board.tracker[co][x][y] = ch;
+}
+
+void button(int co, int x, int y, char ch){
+    
+}
+
+void door(int co, int x, int y, char ch){
+    
+}
+
+void trap(int co, int x, int y, char ch){
+    
+}
+
+
