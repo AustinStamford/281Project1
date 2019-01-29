@@ -155,6 +155,10 @@ void get_options(int argc, char** argv) {
                 
             case 'h':
                 std::cout << "Under Construction" << std::endl;
+                break;
+            
+            default:
+                std::cerr << "Yikes" << std::endl;
                 exit(0);
         }
     }
@@ -360,17 +364,17 @@ bool already_visited(const std::vector<int> &state){
 
 //condition: map is unsolvable
 void print_unreachable(){
-    int pointcount = 0;
+    bool reachable = false;
     //print out original map but with everything not reached '#'
     for(int x = 0; x < board.getrows(); x++){
         for(int y = 0; y < board.getcols(); y++){
             for(int c = 0; c < board.getcolors() + 1; c++){
-                if(board.tracker[c][x][y] == '.'){
-                    pointcount++;
+                if(board.tracker[c][x][y] != '.'){
+                    reachable = true;
                 }
             }
-            if(pointcount == 3 && board.BoardArray[x][y] != '^') board.BoardArray[x][y] = '#';
-            pointcount = 0;
+            if(!reachable) board.BoardArray[x][y] = '#';
+            reachable = false;
         }
     }
     print(board);
