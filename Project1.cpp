@@ -34,9 +34,10 @@ void print(Board board);
 bool algorithm(char dt);
 //this is probably super ineffecient but it's fine for now
 void print_t(Board board);
-bool already_visited(const std::vector<int> state);
+bool already_visited(const std::vector<int> &state);
 void print_unreachable();
-void map_output(std::vector<int> output, std::vector<std::vector<std::vector<char> > > &trackercopy);
+void map_output(std::vector<int> output,
+                std::vector<std::vector<std::vector<char> > > &trackercopy);
 void list_output(std::vector<int> output);
 void output();
 std::string print_coords(int c, int x, int y);
@@ -101,7 +102,7 @@ void read_in_board(int num_rows, int argc, char** argv){
                 board.BoardArray[rowcount].push_back(c);
                 if(c == '@'){
                     //let's just set current_state right here
-                    start_point[0] = rowcount;//original color
+                    start_point[0] = rowcount; //original color
                     start_point[1] = colcount;
                     current_state[0] = 0;
                     current_state[1] = rowcount;
@@ -209,6 +210,7 @@ bool algorithm(char dt){
         //check north
         if(current_state[1] - 1 >= 0){
             if(board.BoardArray[current_state[1]-1][current_state[2]] == '.' ||
+               board.BoardArray[current_state[1]-1][current_state[2]] == '@' ||
                board.BoardArray[current_state[1]-1][current_state[2]] =='?' ||
                (board.BoardArray[current_state[1]-1][current_state[2]] == '^' && current_state[0] == 0)){
                 //i.e. north is valid
@@ -246,10 +248,11 @@ bool algorithm(char dt){
         if(current_state[2] + 1 < board.getcols()){
             if(board.BoardArray[current_state[1]][current_state[2] + 1] == '.' ||
                board.BoardArray[current_state[1]][current_state[2] + 1] =='?' ||
+               board.BoardArray[current_state[1]][current_state[2] + 1] =='@' ||
                (board.BoardArray[current_state[1]][current_state[2] + 1] == '^' && current_state[0] == 0)){
                 //i.e. right is valid
                 if(!already_visited(std::vector<int>{current_state[0], current_state[1], current_state[2] + 1})){
-                     open_move(current_state[0], current_state[1], current_state[2] + 1, '<');
+                    open_move(current_state[0], current_state[1], current_state[2] + 1, '<');
                 }
             }
             //this is how we check for a button
@@ -259,9 +262,9 @@ bool algorithm(char dt){
                     board.BoardArray[current_state[1]][current_state[2] + 1] - 96,
                     current_state[1],
                     current_state[2] + 1})){
-                       button(current_state[0], current_state[1], current_state[2] + 1, '|');
+                        button(current_state[0], current_state[1], current_state[2] + 1, '|');
                     }
-                        
+                
             }
             //right door
             //64 b/c A is 65 and color a will be 1 in current_state, B is 65, b is 2, and so on
@@ -281,6 +284,7 @@ bool algorithm(char dt){
         //south
         if(current_state[1] + 1 < board.getrows()){
             if(board.BoardArray[current_state[1] + 1][current_state[2]] == '.' ||
+               board.BoardArray[current_state[1] + 1][current_state[2]] =='@' ||
                board.BoardArray[current_state[1] + 1][current_state[2]] =='?' ||
                (board.BoardArray[current_state[1] + 1][current_state[2]] =='^' && current_state[0] == 0)){
                 //i.e. south is valid
@@ -313,6 +317,7 @@ bool algorithm(char dt){
         //left
         if(current_state[2] - 1 >= 0){
             if(board.BoardArray[current_state[1]][current_state[2] - 1] == '.' ||
+               board.BoardArray[current_state[1]][current_state[2] - 1] =='@' ||
                board.BoardArray[current_state[1]][current_state[2] - 1] =='?' ||
                (board.BoardArray[current_state[1]][current_state[2] - 1] == '^' && current_state[0] == 0)){
                 //i.e. left is valid
@@ -326,7 +331,7 @@ bool algorithm(char dt){
                     board.BoardArray[current_state[1]][current_state[2] - 1] - 96,
                     current_state[1],
                     current_state[2] - 1})){
-                       button(current_state[0], current_state[1], current_state[2] - 1, '~');
+                        button(current_state[0], current_state[1], current_state[2] - 1, '~');
                     }
             }
             //64 b/c A is 65 and color a will be 1 in current_state, B is 65, b is 2, and so on
@@ -383,10 +388,10 @@ void output(){
             c = i;
         }
     }
-    if(c == -1){
-        std:: cerr << "end not reached";
-        exit(0);
-    }
+//    if(c == -1){
+//        std:: cerr << "end not reached";
+//        exit(0);
+//    }
     output.push_back(std::vector<int>{c, x, y});
     while(board.BoardArray[x][y] != '@'){
         //look north
@@ -409,14 +414,14 @@ void output(){
         else if(board.tracker[c][x][y] > 64 && board.tracker[c][x][y] < 91){
             output.push_back(std::vector<int>{board.tracker[c][x][y] - 64, x, y});
             c = board.tracker[c][x][y] - 64;
-//            if(board.BoardArray[x][y] == 'a'){
-//                output.push_back(std::vector<int>{0, x, y});
-//                c = 0;
-//            }
-//            else{
-//                output.push_back(std::vector<int>{c - (board.BoardArray[x][y] - 97), x, y});
-//                c-= (board.BoardArray[x][y] - 97);
-//            }
+            //            if(board.BoardArray[x][y] == 'a'){
+            //                output.push_back(std::vector<int>{0, x, y});
+            //                c = 0;
+            //            }
+            //            else{
+            //                output.push_back(std::vector<int>{c - (board.BoardArray[x][y] - 97), x, y});
+            //                c-= (board.BoardArray[x][y] - 97);
+            //            }
         }
         else if(board.tracker[c][x][y] > 96 && board.tracker[c][x][y] < 123){
             c+= (board.tracker[c][x][y] - 96);
