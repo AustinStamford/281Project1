@@ -380,8 +380,7 @@ void print_unreachable(){
     print(board);
 }
 
-//handles output in list form
-//let's do this first
+//handles output
 void output(){
     int x = endpoint[0];
     int y = endpoint[1];
@@ -397,7 +396,7 @@ void output(){
 //        exit(0);
 //    }
     output.push_back(std::vector<int>{c, x, y});
-    while(board.BoardArray[x][y] != '@'){
+    while(!(board.BoardArray[x][y] == '@' && c == 0)){
         //look north
         if(board.tracker[c][x][y] == '^' || board.tracker[c][x][y] == '{'){
             output.push_back(std::vector<int>{c, x - 1, y});
