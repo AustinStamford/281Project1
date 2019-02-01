@@ -46,6 +46,11 @@ std::string print_coords(int c, int x, int y);
 void open_move(int co, int x, int y, char ch);
 void button(int co_old, int x, int y, char ch);
 void trap(int co, int x, int y, char ch);
+bool valid_open(int x, int y, int c);
+bool valid_button(int x, int y);
+bool valid_door(int x, int y, int c);
+bool valid_trap(int x, int y, int c);
+void move(int x, int y, int c, char c1, char c2);
 
 
 
@@ -156,7 +161,7 @@ void get_options(int argc, char** argv) {
             case 'h':
                 std::cout << "Under Construction" << std::endl;
                 break;
-            
+                
             default:
                 std::cerr << "Yikes" << std::endl;
                 exit(0);
@@ -195,10 +200,10 @@ void print_t(std::vector<std::vector<std::vector<char> > > tracker){
 
 //returns whether a solution was found
 bool algorithm(char dt){
+    int c, x, y;
     reachable_states.push_back(current_state);
     //while loop that terminates when the deque is empty
     while(!reachable_states.empty()){
-        //let's do queue later
         if(dt == 'q'){
             current_state = reachable_states.front();
             reachable_states.pop_front();
@@ -208,149 +213,29 @@ bool algorithm(char dt){
             current_state = reachable_states.back();
             reachable_states.pop_back();
         }
-        if(board.BoardArray[current_state[1]][current_state[2]] == '?'){
+        
+        c = current_state[0];
+        x = current_state[1];
+        y = current_state[2];
+        
+        if(board.BoardArray[x][y] == '?'){
             return true;
         }
         //check north
-        if(current_state[1] - 1 >= 0){
-            if(board.BoardArray[current_state[1]-1][current_state[2]] == '.' ||
-               board.BoardArray[current_state[1]-1][current_state[2]] == '@' ||
-               board.BoardArray[current_state[1]-1][current_state[2]] =='?' ||
-               (board.BoardArray[current_state[1]-1][current_state[2]] == '^' && current_state[0] == 0)){
-                //i.e. north is valid
-                if(!already_visited(std::vector<int>{current_state[0], current_state[1] - 1, current_state[2]})){
-                    open_move(current_state[0], current_state[1] - 1, current_state[2], '-');
-                }
-            }
-            //this is how we check for a button
-            else if(board.BoardArray[current_state[1]-1][current_state[2]] - 96 > 0 &&
-                    board.BoardArray[current_state[1]-1][current_state[2]] - 97 < board.getcolors()){
-                if(!already_visited(std::vector<int>{
-                    board.BoardArray[current_state[1]-1][current_state[2]] - 96,
-                    current_state[1] - 1,
-                    current_state[2]})){
-                        button(current_state[0], current_state[1] - 1, current_state[2] , '}');
-                    }
-            }
-            //check for a door
-            //64 b/c A is 65 and color a will be 1 in current_state, B is 65, b is 2, and so on
-            else if(board.BoardArray[current_state[1]-1][current_state[2]] - current_state[0] == 64){
-                if(!already_visited(std::vector<int>{current_state[0], current_state[1] - 1, current_state[2]})){
-                    open_move(current_state[0], current_state[1] - 1, current_state[2], '-');
-                }
-            }
-            //check for a trap
-            else if(board.BoardArray[current_state[1]-1][current_state[2]] == '^' &&
-                    current_state[0] != 0){
-                if(!already_visited(std::vector<int>{0, current_state[1] - 1, current_state[2]})){
-                    trap(current_state[0], current_state[1] - 1, current_state[2], '}');
-                }
-                
-            }
-        }//endof norf norf
+        if(x - 1 >= 0){
+            move(x - 1, y, c, '-', '}');
+        }
         //check right
-        if(current_state[2] + 1 < board.getcols()){
-            if(board.BoardArray[current_state[1]][current_state[2] + 1] == '.' ||
-               board.BoardArray[current_state[1]][current_state[2] + 1] =='?' ||
-               board.BoardArray[current_state[1]][current_state[2] + 1] =='@' ||
-               (board.BoardArray[current_state[1]][current_state[2] + 1] == '^' && current_state[0] == 0)){
-                //i.e. right is valid
-                if(!already_visited(std::vector<int>{current_state[0], current_state[1], current_state[2] + 1})){
-                    open_move(current_state[0], current_state[1], current_state[2] + 1, '<');
-                }
-            }
-            //this is how we check for a button
-            else if(board.BoardArray[current_state[1]][current_state[2] + 1] - 96 > 0 &&
-                    board.BoardArray[current_state[1]][current_state[2] + 1] - 97 < board.getcolors()){
-                if(!already_visited(std::vector<int>{
-                    board.BoardArray[current_state[1]][current_state[2] + 1] - 96,
-                    current_state[1],
-                    current_state[2] + 1})){
-                        button(current_state[0], current_state[1], current_state[2] + 1, '|');
-                    }
-                
-            }
-            //right door
-            //64 b/c A is 65 and color a will be 1 in current_state, B is 65, b is 2, and so on
-            else if(board.BoardArray[current_state[1]][current_state[2] + 1] - current_state[0] == 64){
-                if(!already_visited(std::vector<int>{current_state[0], current_state[1], current_state[2] + 1})){
-                    open_move(current_state[0], current_state[1], current_state[2] + 1, '<');
-                }
-            }
-            //check for a trap
-            else if(board.BoardArray[current_state[1]][current_state[2] + 1] == '^' &&
-                    current_state[0] != 0){
-                if(!already_visited(std::vector<int>{0, current_state[1], current_state[2] + 1})){
-                    trap(current_state[0], current_state[1], current_state[2] + 1, '|');
-                }
-            }
+        if(y + 1 < board.getcols()){
+            move(x, y + 1, c, '<', '|');
         }//endof right
         //south
-        if(current_state[1] + 1 < board.getrows()){
-            if(board.BoardArray[current_state[1] + 1][current_state[2]] == '.' ||
-               board.BoardArray[current_state[1] + 1][current_state[2]] =='@' ||
-               board.BoardArray[current_state[1] + 1][current_state[2]] =='?' ||
-               (board.BoardArray[current_state[1] + 1][current_state[2]] =='^' && current_state[0] == 0)){
-                //i.e. south is valid
-                if(!already_visited(std::vector<int>{current_state[0], current_state[1] + 1, current_state[2]})){
-                    open_move(current_state[0], current_state[1] + 1, current_state[2], '^');
-                }
-            }
-            //this is how we check for a button
-            else if(board.BoardArray[current_state[1]+1][current_state[2]] - 96 > 0 &&
-                    board.BoardArray[current_state[1]+1][current_state[2]] - 97 < board.getcolors()){
-                if(!already_visited(std::vector<int>{current_state[0], current_state[1] + 1, current_state[2]})){
-                    button(current_state[0], current_state[1] + 1, current_state[2] , '{');
-                }
-            }
-            //check for a door
-            //64 b/c A is 65 and color a will be 1 in current_state, B is 65, b is 2, and so on
-            else if(board.BoardArray[current_state[1]+1][current_state[2]] - current_state[0] == 64){
-                if(!already_visited(std::vector<int>{current_state[0], current_state[1] + 1, current_state[2]})){
-                    open_move(current_state[0], current_state[1] + 1, current_state[2], '^');
-                }
-            }
-            //check for a trap
-            else if(board.BoardArray[current_state[1] + 1][current_state[2]] == '^' &&
-                    current_state[0] != 0){
-                if(!already_visited(std::vector<int>{0, current_state[1] + 1, current_state[2]})){
-                    trap(current_state[0], current_state[1] + 1, current_state[2], '{');
-                }
-            }
+        if(x + 1 < board.getrows()){
+            move(x + 1, y, c, '^', '{');
         }
         //left
-        if(current_state[2] - 1 >= 0){
-            if(board.BoardArray[current_state[1]][current_state[2] - 1] == '.' ||
-               board.BoardArray[current_state[1]][current_state[2] - 1] =='@' ||
-               board.BoardArray[current_state[1]][current_state[2] - 1] =='?' ||
-               (board.BoardArray[current_state[1]][current_state[2] - 1] == '^' && current_state[0] == 0)){
-                //i.e. left is valid
-                if(!already_visited(std::vector<int>{current_state[0], current_state[1], current_state[2] - 1})){
-                    open_move(current_state[0], current_state[1], current_state[2] - 1, '>');
-                }
-            }
-            else if(board.BoardArray[current_state[1]][current_state[2] - 1] - 96 > 0 &&
-                    board.BoardArray[current_state[1]][current_state[2] - 1] - 97 < board.getcolors()){
-                if(!already_visited(std::vector<int>{
-                    board.BoardArray[current_state[1]][current_state[2] - 1] - 96,
-                    current_state[1],
-                    current_state[2] - 1})){
-                        button(current_state[0], current_state[1], current_state[2] - 1, '~');
-                    }
-            }
-            //64 b/c A is 65 and color a will be 1 in current_state, B is 65, b is 2, and so on
-            else if(board.BoardArray[current_state[1]][current_state[2] - 1] - current_state[0] == 64){
-                if(!already_visited(std::vector<int>{current_state[0], current_state[1], current_state[2] - 1})){
-                    open_move(current_state[0], current_state[1], current_state[2] - 1, '>');
-                }
-            }
-            //check for a trap
-            else if(board.BoardArray[current_state[1]][current_state[2] - 1] == '^' &&
-                    current_state[0] != 0){
-                if(!already_visited(std::vector<int>{0, current_state[1], current_state[2] - 1})){
-                    trap(current_state[0], current_state[1], current_state[2] - 1, '~');
-                }
-            }
+        if(y - 1 >= 0){
+            move(x, y - 1, c, '>', '~');
         }
     }//endof stack
     //END WHILE NOT EMPTY
@@ -391,10 +276,10 @@ void output(){
             c = i;
         }
     }
-//    if(c == -1){
-//        std:: cerr << "end not reached";
-//        exit(0);
-//    }
+    //    if(c == -1){
+    //        std:: cerr << "end not reached";
+    //        exit(0);
+    //    }
     output.push_back(std::vector<int>{c, x, y});
     while(!(board.BoardArray[x][y] == '@' && c == 0)){
         //look north
@@ -451,6 +336,9 @@ void output(){
             for(int j = 0; j < board.getcols(); j++){
                 if(board.BoardArray[i][j] < 91 && board.BoardArray[i][j] > 64){
                     trackercopy[board.BoardArray[i][j] - 64][i][j] = '.';
+                }
+                else if(board.BoardArray[i][j] < 123 && board.BoardArray[i][j] > 96){
+                    trackercopy[board.BoardArray[i][j] - 96][i][j] = '.';
                 }
                 else if(board.BoardArray[i][j] == '^'){
                     trackercopy[0][i][j] = '.';
@@ -539,4 +427,53 @@ void trap(int co, int x, int y, char ch){
     board.tracker[co][x][y] = ch;
 }
 
+bool valid_open(int x, int y, int c){
+    return (board.BoardArray[x][y] == '.' ||
+            board.BoardArray[x][y] == '@' ||
+            board.BoardArray[x][y] =='?' ||
+            (board.BoardArray[x][y] == '^' && c == 0));
+}
 
+bool valid_button(int x, int y){
+    return (board.BoardArray[x][y] - 96 > 0 &&
+            board.BoardArray[x][y] - 97 < board.getcolors());
+}
+
+bool valid_door(int x, int y, int c){
+    return (board.BoardArray[x][y] - c == 64);
+}
+
+bool valid_trap(int x, int y, int c){
+    return (board.BoardArray[x][y] == '^' && c != 0);
+}
+
+
+void move(int x, int y, int c, char c1, char c2){
+    if(valid_open(x, y, c)){
+        if(!already_visited(std::vector<int>{c, x, y})){
+            open_move(c, x, y, c1);
+        }
+    }
+    //this is how we check for a button
+    else if(valid_button(x, y)){
+        if(!already_visited(std::vector<int>{
+            board.BoardArray[x][y] - 96, x, y})){
+                button(c, x,  y, c2);
+            }
+    }
+    //check for a door
+    //64 b/c A is 65 and color a will be 1 in current_state, B is 65, b is 2, and so on
+    else if(valid_door(x, y, c)){
+        if(!already_visited(std::vector<int>{c, x, y})){
+            open_move(c, x, y, c1);
+        }
+    }
+    //check for a trap
+    else if(valid_trap(x, y, c)){
+        if(!already_visited(std::vector<int>{0, x, y})){
+            trap(c, x, y, c2);
+        }
+        
+    }
+    
+}
