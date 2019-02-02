@@ -270,7 +270,6 @@ bool algorithm(char dt){
         }
     }//endof stack
     //END WHILE NOT EMPTY
-    print_t(board.tracker);
     return false;
 }
 
@@ -308,10 +307,6 @@ void output(){
             c = i;
         }
     }
-    //    if(c == -1){
-    //        std:: cerr << "end not reached";
-    //        exit(0);
-    //    }
     output.push_back(std::vector<int>{c, x, y});
     while(!(board.BoardArray[x][y] == '@' && c == 0)){
         //look north
