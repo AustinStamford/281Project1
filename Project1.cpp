@@ -51,6 +51,8 @@ bool valid_button(int x, int y);
 bool valid_door(int x, int y, int c);
 bool valid_trap(int x, int y, int c);
 void move(int x, int y, int c, char c1, char c2);
+bool colorchange(int x, int y, int c);
+bool isTrapOrButton(int x, int y);
 
 
 
@@ -221,24 +223,54 @@ bool algorithm(char dt){
         if(board.BoardArray[x][y] == '?'){
             return true;
         }
-        //check north
-        if(x - 1 >= 0){
-            move(x - 1, y, c, '-', '}');
+        
+        //CHECK IF CURRENT IS A TRAP OR BUTTON
+        if(isTrapOrButton(x, y) && colorchange(x, y, c)){
+            //if button
+            if(valid_button(x, y)){
+                if(!already_visited(std::vector<int>{board.BoardArray[x][y] - 96, x, y})){
+                    //so this is already added to the tracker in the NESW part
+                    //this makes me think I JUST need to add to reachable states here.
+                    reachable_states.push_back(std::vector<int>{
+                        (board.BoardArray[x][y] - 96), x, y});
+                    //mark new using capital letter for old
+                    if(c == 0){
+                        board.tracker[board.BoardArray[x][y] - 96][x][y] = '!' ;
+                    }
+                    else board.tracker[board.BoardArray[x][y] - 96][x][y] = static_cast<char>(c + 64);
+                }
+                c = board.BoardArray[x][y] - 96;
+                current_state[0] = board.BoardArray[x][y] - 96;
+            }
+            else{
+                if(!already_visited(std::vector<int>{0, x, y})){
+                    reachable_states.push_back(std::vector<int>{0, x, y});
+                    board.tracker[0][x][y] = static_cast<char>(c + 96);
+                }
+            }
+            
         }
-        //check right
-        if(y + 1 < board.getcols()){
-            move(x, y + 1, c, '<', '|');
-        }//endof right
-        //south
-        if(x + 1 < board.getrows()){
-            move(x + 1, y, c, '^', '{');
-        }
-        //left
-        if(y - 1 >= 0){
-            move(x, y - 1, c, '>', '~');
+        else{
+            //check north
+            if(x - 1 >= 0){
+                move(x - 1, y, c, '-', '}');
+            }
+            //check right
+            if(y + 1 < board.getcols()){
+                move(x, y + 1, c, '<', '|');
+            }//endof right
+            //south
+            if(x + 1 < board.getrows()){
+                move(x + 1, y, c, '^', '{');
+            }
+            //left
+            if(y - 1 >= 0){
+                move(x, y - 1, c, '>', '~');
+            }
         }
     }//endof stack
     //END WHILE NOT EMPTY
+    print_t(board.tracker);
     return false;
 }
 
@@ -406,25 +438,16 @@ void open_move(int co, int x, int y, char ch){
 }
 
 void button(int co_old, int x, int y, char ch){
-    int co_new = board.BoardArray[x][y] - 96;
     //co old color, x row, y col, ch marking  }|{~
-    reachable_states.push_back(std::vector<int>{co_new, x, y});
     board.tracker[co_old][x][y] = ch;
-    //mark new using capital letter for old
-    if(board.tracker[co_new][x][y] == '.'){
-        if(co_old == 0){
-            board.tracker[co_new][x][y] = '!' ;
-        }
-        else board.tracker[co_new][x][y] = static_cast<char>(co_old + 64);
-    }
+    reachable_states.push_back(std::vector<int>{co_old, x, y});
 }
 
 void trap(int co, int x, int y, char ch){
-    reachable_states.push_back(std::vector<int>{0, x, y});
-    //track which color we went from by using a lowercase letter
-    board.tracker[0][x][y] = static_cast<char>(co + 96);
+    
     //track which direction we came from in the co-level grid
     board.tracker[co][x][y] = ch;
+    reachable_states.push_back(std::vector<int>{co, x, y});
 }
 
 bool valid_open(int x, int y, int c){
@@ -457,7 +480,9 @@ void move(int x, int y, int c, char c1, char c2){
     //this is how we check for a button
     else if(valid_button(x, y)){
         if(!already_visited(std::vector<int>{
-            board.BoardArray[x][y] - 96, x, y})){
+            board.BoardArray[x][y] - 96, x, y}) &&
+           !already_visited(std::vector<int>{
+            c, x, y})){
                 button(c, x,  y, c2);
             }
     }
@@ -470,10 +495,20 @@ void move(int x, int y, int c, char c1, char c2){
     }
     //check for a trap
     else if(valid_trap(x, y, c)){
-        if(!already_visited(std::vector<int>{0, x, y})){
+        if(!already_visited(std::vector<int>{c, x, y})){
             trap(c, x, y, c2);
         }
         
     }
     
+}
+
+bool isTrapOrButton(int x, int y){
+    return (board.BoardArray[x][y] == '^' ||
+            (board.BoardArray[x][y] > 96 && board.BoardArray[x][y] < 123));
+}
+
+bool colorchange(int x, int y, int c){
+    if(valid_button(x, y)) return static_cast<char>(c + 96) != board.BoardArray[x][y];
+    else return (board.BoardArray[x][y] == '^' && c !=0);
 }
