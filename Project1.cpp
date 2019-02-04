@@ -1,5 +1,5 @@
 //
-//  main.cpp
+//  Project1.cpp
 //  Project1
 //
 //  Created by Austin Stamford on 1/19/19.
@@ -21,7 +21,6 @@
 Coord current_state;
 //endpoint
 std::vector<int> endpoint(2);
-//endpoint
 std::vector<int> start_point(2);
 //deque that stores reachable states
 std::deque<Coord> reachable_states;
@@ -88,13 +87,10 @@ int main(int argc, char** argv) {
     
     read_in_board(num_rows, argc, argv);
     
-    /** this is a super naive way to do this **/
     std::vector<std::vector<std::vector<char>>> tracker
     (num_colors + 1, std::vector<std::vector<char>>(num_rows,
                                                     std::vector<char>(num_columns, '.')));
-    /***************************/
     
-    //print(board);
     if(algorithm(board.getdt(), tracker)){
         output(tracker);
     }
@@ -103,7 +99,6 @@ int main(int argc, char** argv) {
         std::cout << "No solution.\nReachable:\n";
         print_unreachable(tracker);
     }
-    //print_t(board);
     return 0;
 }
 
@@ -352,14 +347,6 @@ void output(std::vector<std::vector<std::vector<char>>> &tracker){
         else if(tracker[c][x][y] > 64 && tracker[c][x][y] < 91){
             output.push_back(std::vector<int>{tracker[c][x][y] - 64, x, y});
             c = tracker[c][x][y] - 64;
-            //            if(board.BoardArray[x][y] == 'a'){
-            //                output.push_back(std::vector<int>{0, x, y});
-            //                c = 0;
-            //            }
-            //            else{
-            //                output.push_back(std::vector<int>{c - (board.BoardArray[x][y] - 97), x, y});
-            //                c-= (board.BoardArray[x][y] - 97);
-            //            }
         }
         else if(tracker[c][x][y] > 96 && tracker[c][x][y] < 123){
             c+= (tracker[c][x][y] - 96);
@@ -433,20 +420,12 @@ void map_output(std::vector<int> output, std::vector<std::vector<std::vector<cha
         trackercopy[output[0]][output[1]][output[2]] = '@';
     }
     else if(c == '}' || c == '|' || c == '{' || c == '~' ){
-        trackercopy[output[0]][output[1]][output[2]] = '%';
+        if(static_cast<char>(board.BoardArray[output[1]][output[2]] - 96) != output[0]){
+            trackercopy[output[0]][output[1]][output[2]] = '%';
+        }
+        else trackercopy[output[0]][output[1]][output[2]] = '+';
     }
 }
-
-//std::string print_coords(int c, int x, int y){
-//    char color;
-//    std::string str = "";
-//    if(c == 0) color = '^';
-//    else color = c + 96;
-//    str += "(";
-//    str += color;
-//    return (str + ", ("
-//    + std::to_string(x) + ", " + std::to_string(y) + "))");
-//}
 
 void open_move(std::vector<std::vector<std::vector<char>>> &tracker, int co, int x, int y, char ch){
     reachable_states.push_back(Coord(co, x, y));
