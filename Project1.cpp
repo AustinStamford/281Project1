@@ -15,15 +15,16 @@
 #include <getopt.h>
 #include "xcode_redirect.hpp"
 #include "Board.h"
+#include "Coordinate.h"
 
 //current color, row, column
-std::vector<int> current_state(3);
+Coord current_state;
 //endpoint
 std::vector<int> endpoint(2);
 //endpoint
 std::vector<int> start_point(2);
 //deque that stores reachable states
-std::deque<std::vector<int> > reachable_states;
+std::deque<Coord> reachable_states;
 
 
 Board board;
@@ -35,7 +36,7 @@ void print(Board board);
 bool algorithm(char dt, std::vector<std::vector<std::vector<char>>> &tracker);
 //this is probably super ineffecient but it's fine for now
 void print_t(std::vector<std::vector<std::vector<char> > > &tracker);
-bool already_visited(const std::vector<int> &state, std::vector<std::vector<std::vector<char>>> &tracker);
+bool already_visited(const Coord &state, std::vector<std::vector<std::vector<char>>> &tracker);
 void print_unreachable(std::vector<std::vector<std::vector<char>>> &tracker);
 void map_output(std::vector<int> output, std::vector<std::vector<std::vector<char> > > &trackercopy,
                 std::vector<std::vector<std::vector<char>>> &tracker);
@@ -123,9 +124,9 @@ void read_in_board(int num_rows, int argc, char** argv){
                     //let's just set current_state right here
                     start_point[0] = rowcount; //original color
                     start_point[1] = colcount;
-                    current_state[0] = 0;
-                    current_state[1] = rowcount;
-                    current_state[2] = colcount;
+                    current_state.color = 0;
+                    current_state.row = rowcount;
+                    current_state.column = colcount;
                     //find the endpoint too
                 }
                 else if(c == '?'){
@@ -233,9 +234,9 @@ bool algorithm(char dt, std::vector<std::vector<std::vector<char>>> &tracker){
             reachable_states.pop_back();
         }
         
-        c = current_state[0];
-        x = current_state[1];
-        y = current_state[2];
+        c = current_state.color;
+        x = current_state.row;
+        y = current_state.column;
         
         if(board.BoardArray[x][y] == '?'){
             return true;
@@ -245,23 +246,21 @@ bool algorithm(char dt, std::vector<std::vector<std::vector<char>>> &tracker){
         if(isTrapOrButton(x, y) && colorchange(x, y, c)){
             //if button
             if(valid_button(x, y)){
-                if(!already_visited(std::vector<int>{board.BoardArray[x][y] - 96, x, y}, tracker)){
+                if(!already_visited(Coord(board.BoardArray[x][y] - 96, x, y), tracker)){
                     //so this is already added to the tracker in the NESW part
                     //this makes me think I JUST need to add to reachable states here.
-                    reachable_states.push_back(std::vector<int>{
-                        (board.BoardArray[x][y] - 96), x, y});
+                    reachable_states.push_back(Coord(
+                        (board.BoardArray[x][y] - 96), x, y));
                     //mark new using capital letter for old
                     if(c == 0){
                         tracker[board.BoardArray[x][y] - 96][x][y] = '!' ;
                     }
                     else tracker[board.BoardArray[x][y] - 96][x][y] = static_cast<char>(c + 64);
                 }
-                c = board.BoardArray[x][y] - 96;
-                current_state[0] = board.BoardArray[x][y] - 96;
             }
             else{
-                if(!already_visited(std::vector<int>{0, x, y}, tracker)){
-                    reachable_states.push_back(std::vector<int>{0, x, y});
+                if(!already_visited(Coord(0, x, y), tracker)){
+                    reachable_states.push_back(Coord(0, x, y));
                     tracker[0][x][y] = static_cast<char>(c + 96);
                 }
             }
@@ -291,8 +290,8 @@ bool algorithm(char dt, std::vector<std::vector<std::vector<char>>> &tracker){
 }
 
 
-bool already_visited(const std::vector<int> &state, std::vector<std::vector<std::vector<char>>> &tracker){
-    return tracker[state[0]][state[1]][state[2]] != '.';
+bool already_visited(const Coord &state, std::vector<std::vector<std::vector<char>>> &tracker){
+    return tracker[state.color][state.row][state.column] != '.';
 }
 
 //condition: map is unsolvable
@@ -443,21 +442,21 @@ void map_output(std::vector<int> output, std::vector<std::vector<std::vector<cha
 //}
 
 void open_move(std::vector<std::vector<std::vector<char>>> &tracker, int co, int x, int y, char ch){
-    reachable_states.push_back(std::vector<int>{co, x, y});
+    reachable_states.push_back(Coord(co, x, y));
     tracker[co][x][y] = ch;
 }
 
 void button(std::vector<std::vector<std::vector<char>>> &tracker, int co_old, int x, int y, char ch){
     //co old color, x row, y col, ch marking  }|{~
     tracker[co_old][x][y] = ch;
-    reachable_states.push_back(std::vector<int>{co_old, x, y});
+    reachable_states.push_back(Coord(co_old, x, y));
 }
 
 void trap(std::vector<std::vector<std::vector<char>>> &tracker, int co, int x, int y, char ch){
     
     //track which direction we came from in the co-level grid
     tracker[co][x][y] = ch;
-    reachable_states.push_back(std::vector<int>{co, x, y});
+    reachable_states.push_back(Coord(co, x, y));
 }
 
 bool valid_open(int x, int y, int c){
@@ -483,29 +482,29 @@ bool valid_trap(int x, int y, int c){
 
 void move(std::vector<std::vector<std::vector<char>>> &tracker,int x, int y, int c, char c1, char c2){
     if(valid_open(x, y, c)){
-        if(!already_visited(std::vector<int>{c, x, y}, tracker)){
+        if(!already_visited(Coord(c, x, y), tracker)){
             open_move(tracker, c, x, y, c1);
         }
     }
     //this is how we check for a button
     else if(valid_button(x, y)){
-        if(!already_visited(std::vector<int>{
-            board.BoardArray[x][y] - 96, x, y}, tracker) &&
-           !already_visited(std::vector<int>{
-            c, x, y}, tracker)){
+        if(!already_visited(Coord(
+            board.BoardArray[x][y] - 96, x, y), tracker) &&
+           !already_visited(Coord(
+            c, x, y), tracker)){
                 button(tracker, c, x,  y, c2);
             }
     }
     //check for a door
     //64 b/c A is 65 and color a will be 1 in current_state, B is 65, b is 2, and so on
     else if(valid_door(x, y, c)){
-        if(!already_visited(std::vector<int>{c, x, y}, tracker)){
+        if(!already_visited(Coord(c, x, y), tracker)){
             open_move(tracker, c, x, y, c1);
         }
     }
     //check for a trap
     else if(valid_trap(x, y, c)){
-        if(!already_visited(std::vector<int>{c, x, y}, tracker)){
+        if(!already_visited(Coord(c, x, y), tracker)){
             trap(tracker, c, x, y, c2);
         }
         
