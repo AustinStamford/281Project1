@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <vector>
+#include <cstring>
 #include <stack>
 #include <queue>
 #include <deque>
@@ -31,26 +32,26 @@ Board board;
 void get_options(int argc, char** argv);
 void read_in_board(int num_rows, int argc, char** argv);
 void print(Board board);
-bool algorithm(char dt);
+bool algorithm(char dt, std::vector<std::vector<std::vector<char>>> &tracker);
 //this is probably super ineffecient but it's fine for now
-void print_t(Board board);
-bool already_visited(const std::vector<int> &state);
-void print_unreachable();
-void map_output(std::vector<int> output,
-                std::vector<std::vector<std::vector<char> > > &trackercopy);
+void print_t(std::vector<std::vector<std::vector<char> > > &tracker);
+bool already_visited(const std::vector<int> &state, std::vector<std::vector<std::vector<char>>> &tracker);
+void print_unreachable(std::vector<std::vector<std::vector<char>>> &tracker);
+void map_output(std::vector<int> output, std::vector<std::vector<std::vector<char> > > &trackercopy,
+                std::vector<std::vector<std::vector<char>>> &tracker);
 void list_output(std::vector<int> output);
-void output();
+void output(std::vector<std::vector<std::vector<char>>> &tracker);
 std::string print_coords(int c, int x, int y);
 
 //algo helpers
-void open_move(int co, int x, int y, char ch);
-void button(int co_old, int x, int y, char ch);
-void trap(int co, int x, int y, char ch);
+void open_move(std::vector<std::vector<std::vector<char>>> &tracker, int co, int x, int y, char ch);
+void button(std::vector<std::vector<std::vector<char>>> &tracker, int co_old, int x, int y, char ch);
+void trap(std::vector<std::vector<std::vector<char>>> &tracker, int co, int x, int y, char ch);
 bool valid_open(int x, int y, int c);
 bool valid_button(int x, int y);
 bool valid_door(int x, int y, int c);
 bool valid_trap(int x, int y, int c);
-void move(int x, int y, int c, char c1, char c2);
+void move(std::vector<std::vector<std::vector<char>>> &tracker,int x, int y, int c, char c1, char c2);
 bool colorchange(int x, int y, int c);
 bool isTrapOrButton(int x, int y);
 
@@ -67,6 +68,13 @@ int main(int argc, char** argv) {
     >> num_columns;
     get_options(argc, argv);
     
+    if(num_colors < 0 || num_colors > 26) return 1;
+    if(num_rows < 1 || num_columns < 1) return 1;
+    
+    if((board.getoutput() != "list" &&
+       board.getoutput() != "map") ||
+        (board.getdt() != 's' && board.getdt() != 'q')) return 1;
+    
     board.setcols(num_columns);
     board.setrows(num_rows);
     board.setcolors(num_colors);
@@ -74,20 +82,19 @@ int main(int argc, char** argv) {
     read_in_board(num_rows, argc, argv);
     
     /** this is a super naive way to do this **/
-    std::vector<std::vector<std::vector<char>>> tracker1
+    std::vector<std::vector<std::vector<char>>> tracker
     (num_colors + 1, std::vector<std::vector<char>>(num_rows,
                                                     std::vector<char>(num_columns, '.')));
-    board.tracker = tracker1;
     /***************************/
     
     //print(board);
-    if(algorithm(board.getdt())){
-        output();
+    if(algorithm(board.getdt(), tracker)){
+        output(tracker);
     }
     else{
         //else puzzle is not solvable
         std::cout << "No solution.\nReachable:\n";
-        print_unreachable();
+        print_unreachable(tracker);
     }
     //print_t(board);
     return 0;
@@ -101,13 +108,18 @@ void read_in_board(int num_rows, int argc, char** argv){
     board.BoardArray.resize(num_rows);
     std::string newline;
     getline(std::cin, newline);
+    start_point = std::vector<int>{-1, -1};
+    endpoint = std::vector<int>{-1, -1};
     int rowcount = 0;
     int colcount = 0;
     while(getline(std::cin, newline)){
         if(newline[0] != '/'){
             for(auto c : newline){
+                if(c != '@' && c != '?' && c != '#' && c != '^' && c != '.' &&
+                   !(c >= 'a' && c <= 'a' + board.getcolors()) && !(c >= 'A' && c <= 'A' + board.getcolors())) exit(1);
                 board.BoardArray[rowcount].push_back(c);
                 if(c == '@'){
+                    if(start_point[0] != -1) exit(1);
                     //let's just set current_state right here
                     start_point[0] = rowcount; //original color
                     start_point[1] = colcount;
@@ -117,6 +129,7 @@ void read_in_board(int num_rows, int argc, char** argv){
                     //find the endpoint too
                 }
                 else if(c == '?'){
+                    if(endpoint[0] != -1) exit(1);
                     endpoint[0] = rowcount;
                     endpoint[1] = colcount;
                 }
@@ -149,14 +162,18 @@ void get_options(int argc, char** argv) {
     while ((option = getopt_long(argc, argv, "qso:h", longOpts, &option_index)) != -1) {
         switch (option) {
             case 'q':
+                if(board.getdt() == 'q' || board.getdt() == 's') exit(1);
                 board.setdt('q');
                 break;
                 
             case 's':
+                if(board.getdt() == 'q' || board.getdt() == 's') exit(1);
                 board.setdt('s');
                 break;
                 
             case 'o':
+                if(board.getoutput() == "map" || board.getoutput() == "list") exit(1);
+                if(strcmp(optarg, "map") != 0 && strcmp(optarg, "list") != 0) exit(1);
                 board.setoutput(optarg);
                 break;
                 
@@ -166,7 +183,7 @@ void get_options(int argc, char** argv) {
                 
             default:
                 std::cerr << "Yikes" << std::endl;
-                exit(0);
+                exit(1);
         }
     }
     
@@ -186,7 +203,7 @@ void print(Board board){
 }
 
 //prints contents of tracker
-void print_t(std::vector<std::vector<std::vector<char> > > tracker){
+void print_t(std::vector<std::vector<std::vector<char> > > &tracker){
     char c = '^';
     for(int i = 0; i < board.getcolors() + 1; i++){
         if(i != 0) c = static_cast<char>(i + 96);
@@ -201,7 +218,7 @@ void print_t(std::vector<std::vector<std::vector<char> > > tracker){
 }
 
 //returns whether a solution was found
-bool algorithm(char dt){
+bool algorithm(char dt, std::vector<std::vector<std::vector<char>>> &tracker){
     int c, x, y;
     reachable_states.push_back(current_state);
     //while loop that terminates when the deque is empty
@@ -228,24 +245,24 @@ bool algorithm(char dt){
         if(isTrapOrButton(x, y) && colorchange(x, y, c)){
             //if button
             if(valid_button(x, y)){
-                if(!already_visited(std::vector<int>{board.BoardArray[x][y] - 96, x, y})){
+                if(!already_visited(std::vector<int>{board.BoardArray[x][y] - 96, x, y}, tracker)){
                     //so this is already added to the tracker in the NESW part
                     //this makes me think I JUST need to add to reachable states here.
                     reachable_states.push_back(std::vector<int>{
                         (board.BoardArray[x][y] - 96), x, y});
                     //mark new using capital letter for old
                     if(c == 0){
-                        board.tracker[board.BoardArray[x][y] - 96][x][y] = '!' ;
+                        tracker[board.BoardArray[x][y] - 96][x][y] = '!' ;
                     }
-                    else board.tracker[board.BoardArray[x][y] - 96][x][y] = static_cast<char>(c + 64);
+                    else tracker[board.BoardArray[x][y] - 96][x][y] = static_cast<char>(c + 64);
                 }
                 c = board.BoardArray[x][y] - 96;
                 current_state[0] = board.BoardArray[x][y] - 96;
             }
             else{
-                if(!already_visited(std::vector<int>{0, x, y})){
+                if(!already_visited(std::vector<int>{0, x, y}, tracker)){
                     reachable_states.push_back(std::vector<int>{0, x, y});
-                    board.tracker[0][x][y] = static_cast<char>(c + 96);
+                    tracker[0][x][y] = static_cast<char>(c + 96);
                 }
             }
             
@@ -253,19 +270,19 @@ bool algorithm(char dt){
         else{
             //check north
             if(x - 1 >= 0){
-                move(x - 1, y, c, '-', '}');
+                move(tracker, x - 1, y, c, '-', '}');
             }
             //check right
             if(y + 1 < board.getcols()){
-                move(x, y + 1, c, '<', '|');
+                move(tracker, x, y + 1, c, '<', '|');
             }//endof right
             //south
             if(x + 1 < board.getrows()){
-                move(x + 1, y, c, '^', '{');
+                move(tracker, x + 1, y, c, '^', '{');
             }
             //left
             if(y - 1 >= 0){
-                move(x, y - 1, c, '>', '~');
+                move(tracker, x, y - 1, c, '>', '~');
             }
         }
     }//endof stack
@@ -274,18 +291,18 @@ bool algorithm(char dt){
 }
 
 
-bool already_visited(const std::vector<int> &state){
-    return board.tracker[state[0]][state[1]][state[2]] != '.';
+bool already_visited(const std::vector<int> &state, std::vector<std::vector<std::vector<char>>> &tracker){
+    return tracker[state[0]][state[1]][state[2]] != '.';
 }
 
 //condition: map is unsolvable
-void print_unreachable(){
+void print_unreachable(std::vector<std::vector<std::vector<char>>> &tracker){
     bool reachable = false;
     //print out original map but with everything not reached '#'
     for(int x = 0; x < board.getrows(); x++){
         for(int y = 0; y < board.getcols(); y++){
             for(int c = 0; c < board.getcolors() + 1; c++){
-                if(board.tracker[c][x][y] != '.'){
+                if(tracker[c][x][y] != '.'){
                     reachable = true;
                 }
             }
@@ -297,38 +314,38 @@ void print_unreachable(){
 }
 
 //handles output
-void output(){
+void output(std::vector<std::vector<std::vector<char>>> &tracker){
     int x = endpoint[0];
     int y = endpoint[1];
     int c = -1;
     std::deque<std::vector<int>> output;
     for(int i = 0; i < board.getcolors() + 1; i++){
-        if(board.tracker[i][x][y] != '.'){
+        if(tracker[i][x][y] != '.'){
             c = i;
         }
     }
     output.push_back(std::vector<int>{c, x, y});
     while(!(board.BoardArray[x][y] == '@' && c == 0)){
         //look north
-        if(board.tracker[c][x][y] == '^' || board.tracker[c][x][y] == '{'){
+        if(tracker[c][x][y] == '^' || tracker[c][x][y] == '{'){
             output.push_back(std::vector<int>{c, x - 1, y});
             x--;
         }
-        else if(board.tracker[c][x][y] == '<' || board.tracker[c][x][y] == '|'){
+        else if(tracker[c][x][y] == '<' || tracker[c][x][y] == '|'){
             output.push_back(std::vector<int>{c, x, y - 1});
             y--;
         }
-        else if(board.tracker[c][x][y] == '>' || board.tracker[c][x][y] == '~'){
+        else if(tracker[c][x][y] == '>' || tracker[c][x][y] == '~'){
             output.push_back(std::vector<int>{c, x, y + 1});
             y++;
         }
-        else if(board.tracker[c][x][y] == '-' || board.tracker[c][x][y] == '}'){
+        else if(tracker[c][x][y] == '-' || tracker[c][x][y] == '}'){
             output.push_back(std::vector<int>{c, x + 1, y});
             x++;
         }
-        else if(board.tracker[c][x][y] > 64 && board.tracker[c][x][y] < 91){
-            output.push_back(std::vector<int>{board.tracker[c][x][y] - 64, x, y});
-            c = board.tracker[c][x][y] - 64;
+        else if(tracker[c][x][y] > 64 && tracker[c][x][y] < 91){
+            output.push_back(std::vector<int>{tracker[c][x][y] - 64, x, y});
+            c = tracker[c][x][y] - 64;
             //            if(board.BoardArray[x][y] == 'a'){
             //                output.push_back(std::vector<int>{0, x, y});
             //                c = 0;
@@ -338,11 +355,11 @@ void output(){
             //                c-= (board.BoardArray[x][y] - 97);
             //            }
         }
-        else if(board.tracker[c][x][y] > 96 && board.tracker[c][x][y] < 123){
-            c+= (board.tracker[c][x][y] - 96);
+        else if(tracker[c][x][y] > 96 && tracker[c][x][y] < 123){
+            c+= (tracker[c][x][y] - 96);
             output.push_back(std::vector<int>{c, x, y});
         }
-        else if(board.tracker[c][x][y] == '!'){
+        else if(tracker[c][x][y] == '!'){
             output.push_back(std::vector<int>{0, x, y});
             c = 0;
         }
@@ -354,7 +371,7 @@ void output(){
         }
     }
     else{
-        std::vector<std::vector<std::vector<char> > > trackercopy = board.tracker;
+        std::vector<std::vector<std::vector<char> > > trackercopy = tracker;
         for(int i = 0; i < board.getcolors() + 1; i++){
             trackercopy[i] = board.BoardArray;
             if(i != 0) trackercopy[i][start_point[0]][start_point[1]] = '.';
@@ -375,7 +392,7 @@ void output(){
         trackercopy[output.front()[0]][output.front()[1]][output.front()[2]] = '?';
         output.pop_front();
         while(!output.empty()){
-            map_output(output.back(), trackercopy);
+            map_output(output.back(), trackercopy, tracker);
             output.pop_back();
         }
         print_t(trackercopy);
@@ -393,9 +410,10 @@ void list_output(std::vector<int> output){
 //handles output in map form
 //important to know what the input for this function is:
 //only need to deal with THIS input
-void map_output(std::vector<int> output, std::vector<std::vector<std::vector<char> > > &trackercopy){
+void map_output(std::vector<int> output, std::vector<std::vector<std::vector<char> > > &trackercopy,
+                std::vector<std::vector<std::vector<char>>> &tracker){
     //in parent function loop through to get here
-    char c = board.tracker[output[0]][output[1]][output[2]];
+    char c = tracker[output[0]][output[1]][output[2]];
     //match arg vector with tracker
     //Switch ^>v< to +
     if(output == std::vector<int>{0, start_point[0], start_point[1]}){
@@ -411,9 +429,6 @@ void map_output(std::vector<int> output, std::vector<std::vector<std::vector<cha
     else if(c == '}' || c == '|' || c == '{' || c == '~' ){
         trackercopy[output[0]][output[1]][output[2]] = '%';
     }
-    //switch # to %
-    //call modified print_t function
-    //we're just straight modifying tracker here because we don't need it anymore
 }
 
 //std::string print_coords(int c, int x, int y){
@@ -427,21 +442,21 @@ void map_output(std::vector<int> output, std::vector<std::vector<std::vector<cha
 //    + std::to_string(x) + ", " + std::to_string(y) + "))");
 //}
 
-void open_move(int co, int x, int y, char ch){
+void open_move(std::vector<std::vector<std::vector<char>>> &tracker, int co, int x, int y, char ch){
     reachable_states.push_back(std::vector<int>{co, x, y});
-    board.tracker[co][x][y] = ch;
+    tracker[co][x][y] = ch;
 }
 
-void button(int co_old, int x, int y, char ch){
+void button(std::vector<std::vector<std::vector<char>>> &tracker, int co_old, int x, int y, char ch){
     //co old color, x row, y col, ch marking  }|{~
-    board.tracker[co_old][x][y] = ch;
+    tracker[co_old][x][y] = ch;
     reachable_states.push_back(std::vector<int>{co_old, x, y});
 }
 
-void trap(int co, int x, int y, char ch){
+void trap(std::vector<std::vector<std::vector<char>>> &tracker, int co, int x, int y, char ch){
     
     //track which direction we came from in the co-level grid
-    board.tracker[co][x][y] = ch;
+    tracker[co][x][y] = ch;
     reachable_states.push_back(std::vector<int>{co, x, y});
 }
 
@@ -466,32 +481,32 @@ bool valid_trap(int x, int y, int c){
 }
 
 
-void move(int x, int y, int c, char c1, char c2){
+void move(std::vector<std::vector<std::vector<char>>> &tracker,int x, int y, int c, char c1, char c2){
     if(valid_open(x, y, c)){
-        if(!already_visited(std::vector<int>{c, x, y})){
-            open_move(c, x, y, c1);
+        if(!already_visited(std::vector<int>{c, x, y}, tracker)){
+            open_move(tracker, c, x, y, c1);
         }
     }
     //this is how we check for a button
     else if(valid_button(x, y)){
         if(!already_visited(std::vector<int>{
-            board.BoardArray[x][y] - 96, x, y}) &&
+            board.BoardArray[x][y] - 96, x, y}, tracker) &&
            !already_visited(std::vector<int>{
-            c, x, y})){
-                button(c, x,  y, c2);
+            c, x, y}, tracker)){
+                button(tracker, c, x,  y, c2);
             }
     }
     //check for a door
     //64 b/c A is 65 and color a will be 1 in current_state, B is 65, b is 2, and so on
     else if(valid_door(x, y, c)){
-        if(!already_visited(std::vector<int>{c, x, y})){
-            open_move(c, x, y, c1);
+        if(!already_visited(std::vector<int>{c, x, y}, tracker)){
+            open_move(tracker, c, x, y, c1);
         }
     }
     //check for a trap
     else if(valid_trap(x, y, c)){
-        if(!already_visited(std::vector<int>{c, x, y})){
-            trap(c, x, y, c2);
+        if(!already_visited(std::vector<int>{c, x, y}, tracker)){
+            trap(tracker, c, x, y, c2);
         }
         
     }
