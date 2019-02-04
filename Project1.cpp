@@ -36,23 +36,29 @@ void print(Board board);
 bool algorithm(char dt, std::vector<std::vector<std::vector<char>>> &tracker);
 //this is probably super ineffecient but it's fine for now
 void print_t(std::vector<std::vector<std::vector<char> > > &tracker);
-bool already_visited(const Coord &state, std::vector<std::vector<std::vector<char>>> &tracker);
+bool already_visited(const Coord &state,
+                     std::vector<std::vector<std::vector<char>>> &tracker);
 void print_unreachable(std::vector<std::vector<std::vector<char>>> &tracker);
-void map_output(std::vector<int> output, std::vector<std::vector<std::vector<char> > > &trackercopy,
+void map_output(std::vector<int> output,
+                std::vector<std::vector<std::vector<char> > > &trackercopy,
                 std::vector<std::vector<std::vector<char>>> &tracker);
 void list_output(std::vector<int> output);
 void output(std::vector<std::vector<std::vector<char>>> &tracker);
 std::string print_coords(int c, int x, int y);
 
 //algo helpers
-void open_move(std::vector<std::vector<std::vector<char>>> &tracker, int co, int x, int y, char ch);
-void button(std::vector<std::vector<std::vector<char>>> &tracker, int co_old, int x, int y, char ch);
-void trap(std::vector<std::vector<std::vector<char>>> &tracker, int co, int x, int y, char ch);
+void open_move(std::vector<std::vector<std::vector<char>>> &tracker,
+               int co, int x, int y, char ch);
+void button(std::vector<std::vector<std::vector<char>>> &tracker,
+            int co_old, int x, int y, char ch);
+void trap(std::vector<std::vector<std::vector<char>>> &tracker,
+          int co, int x, int y, char ch);
 bool valid_open(int x, int y, int c);
 bool valid_button(int x, int y);
 bool valid_door(int x, int y, int c);
 bool valid_trap(int x, int y, int c);
-void move(std::vector<std::vector<std::vector<char>>> &tracker,int x, int y, int c, char c1, char c2);
+void move(std::vector<std::vector<std::vector<char>>> &tracker,
+           int x, int y, int c, char c1, char c2);
 bool colorchange(int x, int y, int c);
 bool isTrapOrButton(int x, int y);
 
@@ -117,7 +123,7 @@ void read_in_board(int num_rows, int argc, char** argv){
         if(newline[0] != '/'){
             for(auto c : newline){
                 if(c != '@' && c != '?' && c != '#' && c != '^' && c != '.' &&
-                   !(c >= 'a' && c <= 'a' + board.getcolors()) && !(c >= 'A' && c <= 'A' + board.getcolors())) exit(1);
+                   !(c >= 'a' && c < 'a' + board.getcolors()) && !(c >= 'A' && c < 'A' + board.getcolors())) exit(1);
                 board.BoardArray[rowcount].push_back(c);
                 if(c == '@'){
                     if(start_point[0] != -1) exit(1);
@@ -141,6 +147,7 @@ void read_in_board(int num_rows, int argc, char** argv){
             colcount = 0;
         }
     }
+    if(start_point[0] == -1 || endpoint[0] == -1) exit(1);
 }
 
 

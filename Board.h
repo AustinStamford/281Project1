@@ -14,18 +14,6 @@
 class Board {
     
 public:
-    //constructor stores number of colors rows, columns
-    //actually we probably need data types in here too
-    //    Board(const std::string output, const char dt, const int colors, const int rows, const int columns){
-    //        num_colors = colors;
-    //        num_rows = rows;
-    //        num_columns = columns;
-    //        //this might be rows but I think it's columns
-    //        BoardArray.reserve(num_columns);
-    //    }
-    
-    //function that reads lines of input in and initializes the board 2D vector
-    //make this a vector of chars instead of a string
     
     //row getter
     int getrows(){
